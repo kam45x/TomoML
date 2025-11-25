@@ -44,7 +44,7 @@ def show_dicom_info(dicom_path):
     print("Rescale Slope =", getattr(ds, "RescaleSlope", "Not found"))
     print(f"Min pixel value = {ds.pixel_array.min()}")
     print(f"Max pixel value = {ds.pixel_array.max()}")
-    
+
     if ds.ImageType[0] != "ORIGINAL":
         return True
 
@@ -54,7 +54,7 @@ def show_dicom_info(dicom_path):
     pixel_array = ds.pixel_array
 
     # Display full image
-    plt.imshow(pixel_array, cmap='gray')
+    plt.imshow(pixel_array, cmap="gray")
     plt.title("DICOM Image")
     plt.colorbar(label="Pixel Intensity")
     plt.show()
@@ -70,6 +70,7 @@ def ask_user_for_category(directory):
             return answer
         print("Invalid input. Use A or R.")
 
+
 def write_to_file(decision, relative_root):
     """Writes the directory to the appropriate file based on user decision."""
     if decision == "A":
@@ -78,6 +79,7 @@ def write_to_file(decision, relative_root):
     elif decision == "R":
         with open(OUTPUT_REJECT, "a") as fr:
             fr.write(relative_root + "\n")
+
 
 def main():
     accepted, rejected = load_existing_categories()
