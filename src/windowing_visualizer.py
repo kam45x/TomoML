@@ -6,7 +6,7 @@ from dival import get_standard_dataset
 import torch
 from torch.utils.data import DataLoader
 
-from Pix2Pix import UnetGenerator
+from models.Pix2PixV1 import UnetGenerator
 
 
 def slider_window(image1, image2, a0=-1024, b0=3071):

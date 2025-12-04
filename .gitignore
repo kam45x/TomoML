@@ -2,3 +2,5 @@ WUT-Thesis/
 data/
 articles/
 SDI/
+*.pyc
+__pycache__/
