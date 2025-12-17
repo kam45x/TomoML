@@ -120,7 +120,7 @@ class ConditionalDiscriminator(nn.Module):
         self.block1 = BasicBlock(2, 64, norm=False)  # 128x128 -> 64x64
         self.block2 = BasicBlock(64, 128)  # 64x64 -> 32x32
         self.block3 = BasicBlock(128, 256)  # 32x32 -> 16x16
-        self.block4 = BasicBlock(512, 512)  # 16x16 -> 8x8
+        self.block4 = BasicBlock(256, 512)  # 16x16 -> 8x8
         self.block5 = BasicBlock(512, 1)  # 8x8 -> 4x4
 
         self.cond_resize = nn.AdaptiveAvgPool2d((128, 128))

@@ -6,7 +6,7 @@ from dival import get_standard_dataset
 import torch
 from torch.utils.data import DataLoader
 
-from models.Pix2Pix_256_V1 import UnetGenerator
+from models.Pix2Pix_128 import UnetGenerator
 
 
 def slider_window(image1, image2, a0=-1024, b0=3071):
@@ -83,14 +83,14 @@ def main():
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
     generator = UnetGenerator().to(device)
-    weights = torch.load("models/256x256_0212_pix2pix.pth", map_location=device)
+    weights = torch.load("src/best_generator.pth", map_location=device)
     generator.load_state_dict(weights)
 
     dataset = get_standard_dataset(
         "custom",
-        data_path="data/dataset_S2010",
-        sinogram_shape=(512, 365),
-        image_shape=(256, 256),
+        data_path="data/dataset_S2010_128",
+        sinogram_shape=(256, 183),
+        image_shape=(128, 128),
         parts_len={"train": 128, "validation": 16, "test": 17},
         impl="skimage",
     )
