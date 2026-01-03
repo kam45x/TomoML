@@ -42,10 +42,10 @@ class UnetGenerator(nn.Module):
         self.enc3 = ResidualConvBlock(256, 512)
         self.pool3 = nn.MaxPool2d(2)  # 64x45 -> 32x22
 
-        self.enc4 = ResidualConvBlock(512, 512)
+        self.enc4 = ResidualConvBlock(512, 1024)
 
         # ----- Bottleneck -----
-        self.bottleneck = ResidualConvBlock(512, 1024)
+        self.bottleneck = ResidualConvBlock(1024, 1024)
 
         # ----- Decoder -----
         self.up3 = nn.ConvTranspose2d(1024, 512, kernel_size=2, stride=2)
@@ -117,10 +117,10 @@ class ConditionalDiscriminator(nn.Module):
         self,
     ):
         super().__init__()
-        self.block1 = BasicBlock(2, 64, norm=False)  # 128x128 -> 64x64
-        self.block2 = BasicBlock(64, 128)  # 64x64 -> 32x32
-        self.block3 = BasicBlock(128, 256)  # 32x32 -> 16x16
-        self.block4 = BasicBlock(256, 512)  # 16x16 -> 8x8
+        self.block1 = BasicBlock(2, 128, norm=False)  # 128x128 -> 64x64
+        self.block2 = BasicBlock(128, 256)  # 64x64 -> 32x32
+        self.block3 = BasicBlock(256, 512)  # 32x32 -> 16x16
+        self.block4 = BasicBlock(512, 512)  # 16x16 -> 8x8
         self.block5 = BasicBlock(512, 1)  # 8x8 -> 4x4
 
         self.cond_resize = nn.AdaptiveAvgPool2d((128, 128))
