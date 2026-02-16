@@ -3,26 +3,27 @@ import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
 
 from dival import get_standard_dataset
+from dival.reconstructors.odl_reconstructors import FBPReconstructor
+import odl
 import torch
 from torch.utils.data import DataLoader
-import astra
 
 from models.Pix2Pix_128 import UnetGenerator
 
 
 def slider_window(image1, image2, a0=-1024, b0=3071):
     """
-    Wyświetla dwa obrazy CT jednocześnie (np. oryginalny + rekonstrukcję)
-    z jednym wspólnym zestawem suwaków w jednostkach HU.
+    Wyswietla dwa obrazy CT jednoczesnie (np. oryginalny + rekonstrukcje)
+    z jednym wspolnym zestawem suwakow w jednostkach HU.
 
     Parametry:
     -----------
     image1 : np.ndarray
-        Pierwszy obraz 2D w zakresie 0.0–1.0
+        Pierwszy obraz 2D w zakresie 0.0-1.0
     image2 : np.ndarray
-        Drugi obraz 2D w zakresie 0.0–1.0
+        Drugi obraz 2D w zakresie 0.0-1.0
     a0, b0 : float
-        Początkowe wartości okienka HU
+        Poczatkowe wartosci okienka HU
     """
 
     hu_min = -1024
@@ -41,10 +42,14 @@ def slider_window(image1, image2, a0=-1024, b0=3071):
 
     ax1, ax2 = axes
 
-    im1 = ax1.imshow(window_image(image1, a0, b0), cmap="gray", vmin=0, vmax=1)
+    im1 = ax1.imshow(
+        window_image(image1, a0, b0), cmap="gray", vmin=0, vmax=1
+    )
     ax1.set_title("Original")
 
-    im2 = ax2.imshow(window_image(image2, a0, b0), cmap="gray", vmin=0, vmax=1)
+    im2 = ax2.imshow(
+        window_image(image2, a0, b0), cmap="gray", vmin=0, vmax=1
+    )
     ax2.set_title("Reconstructed")
 
     ax_a = plt.axes([0.15, 0.1, 0.65, 0.03])
@@ -77,63 +82,72 @@ def get_reconstructed_images_nn(model, dataloader, device):
 
             output = model(sino)
 
-            return (img.cpu().numpy().astype(np.float32), output.cpu().numpy().astype(np.float32))
+            return (
+                img.cpu().numpy().astype(np.float32),
+                output.cpu().numpy().astype(np.float32),
+            )
+
+
+def build_fbp_reconstructor(
+    img_size=128, num_angles=256, impl="astra_cuda"
+):
+    """
+    Buduje rekonstruktor FBP przy uzyciu ODL (tak jak w test_model.ipynb).
+
+    Parametry:
+        img_size   : rozmiar obrazu wyjsciowego (kwadrat)
+        num_angles : liczba katow projekcji
+        impl       : backend ODL ("astra_cuda" lub "skimage")
+
+    Zwraca:
+        FBPReconstructor gotowy do uzycia przez .reconstruct(observation)
+    """
+    reco_space = odl.uniform_discr(
+        min_pt=[-0.13, -0.13],
+        max_pt=[0.13, 0.13],
+        shape=(img_size, img_size),
+        dtype=np.float32,
+    )
+    reco_geometry = odl.tomo.parallel_beam_geometry(
+        reco_space, num_angles=num_angles
+    )
+    reco_ray_trafo = odl.tomo.RayTransform(
+        reco_space, reco_geometry, impl=impl
+    )
+
+    return FBPReconstructor(reco_ray_trafo)
 
 
 def get_reconstructed_images_classic(
-    sinograms: np.ndarray, img_size, algorithm="FBP_CUDA"
+    dataset, index=0, impl="astra_cuda"
 ):
     """
-    Rekonstruuje batch obrazów z batcha sinogramów.
+    Rekonstruuje obraz metoda FBP (ODL) dla wybranego elementu ze zbioru testowego.
 
     Parametry:
-        sinograms (np.ndarray): [B, A, D]
-        num_angles (int): liczba kątów
-        img_size (int): rozmiar obrazu wyjściowego
-        algorithm (str): np. "FBP" lub "FBP_CUDA"
+        dataset : dival dataset z metoda get_data_pairs
+        index   : indeks probki w zbiorze testowym
+        impl    : backend ODL ray transform ("astra_cuda" lub "skimage")
 
     Zwraca:
-        np.ndarray: [B, img_size, img_size]
+        tuple (img_original, img_reconstructed) - oba jako np.ndarray (128, 128)
     """
+    test_pairs = dataset.get_data_pairs(part="test")
+    observation, ground_truth = test_pairs[index]
 
-    assert sinograms.ndim == 3, "Oczekiwany shape [B, A, D]"
-    B, A, D = sinograms.shape
+    reconstructor = build_fbp_reconstructor(
+        img_size=128, num_angles=256, impl=impl
+    )
+    reconstruction = np.asarray(
+        reconstructor.reconstruct(observation)
+    )
+    original = np.asarray(ground_truth)
 
-    # --- Geometria (wspólna dla batcha) ---
-    angles = np.linspace(0, np.pi, A, endpoint=False)
-    proj_geom = astra.create_proj_geom("parallel", 1.0, D, angles)
-    vol_geom = astra.create_vol_geom(img_size, img_size)
-
-    reconstructions = []
-
-    for b in range(B):
-        sino = sinograms[b]
-
-        sino_id = astra.data2d.create("-sino", proj_geom, sino)
-        reco_id = astra.data2d.create("-vol", vol_geom)
-
-        cfg = astra.astra_dict(algorithm)
-        cfg["ReconstructionDataId"] = reco_id
-        cfg["ProjectionDataId"] = sino_id
-        if "CUDA" not in algorithm:
-            cfg["ProjectorId"] = astra.create_projector("linear", proj_geom, vol_geom)
-
-        alg_id = astra.algorithm.create(cfg)
-        astra.algorithm.run(alg_id, iterations=256 * 500)
-
-        reco = astra.data2d.get(reco_id)
-        reconstructions.append(reco)
-
-        # Sprzątanie
-        astra.algorithm.delete(alg_id)
-        astra.data2d.delete(sino_id)
-        astra.data2d.delete(reco_id)
-
-    return np.stack(reconstructions, axis=0)
+    return original, reconstruction
 
 
 def main():
-    RECONSTRUCTOR = "FBP_CUDA"
+    RECONSTRUCTOR = "FBP"  # "FBP", "FBP_CUDA", or "NN"
     index = 0
 
     dataset = get_standard_dataset(
@@ -141,40 +155,47 @@ def main():
         data_path="../data/ct_reconstruction_dataset_128",
         sinogram_shape=(256, 183),
         image_shape=(128, 128),
-        parts_len={"train": 206143, "validation": 25767, "test": 25769},
+        parts_len={
+            "train": 206143,
+            "validation": 25767,
+            "test": 25769,
+        },
         impl="skimage",
     )
 
-    test_dataset = dataset.create_torch_dataset(part="test")
-    test_loader = DataLoader(
-        test_dataset,
-        batch_size=1,
-        shuffle=True,
-    )
-
     if RECONSTRUCTOR == "NN":
-        device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+        device = (
+            torch.device("cuda")
+            if torch.cuda.is_available()
+            else torch.device("cpu")
+        )
         generator = UnetGenerator().to(device)
-        weights = torch.load("../models/128x128_1412_pix2pix.pth", map_location=device)
+        weights = torch.load(
+            "../models/128x128_1412_pix2pix.pth", map_location=device
+        )
         generator.load_state_dict(weights)
-        original, reconstructed = get_reconstructed_images_nn(generator, test_loader, device)
+
+        test_dataset = dataset.create_torch_dataset(part="test")
+        test_loader = DataLoader(
+            test_dataset, batch_size=1, shuffle=True
+        )
+
+        original, reconstructed = get_reconstructed_images_nn(
+            generator, test_loader, device
+        )
         img_original = original[index][0]
         img_reconstructed = reconstructed[index][0]
     else:
-        with torch.no_grad():
-            for sino, img in test_loader:
-                original = img.unsqueeze(1).cpu().numpy().astype(np.float32)
-                original[index][0] = np.rot90(original[index][0])
-                sino_np = sino.detach().cpu().numpy().astype(np.float32)
+        # "FBP_CUDA" uses astra_cuda backend; "FBP" falls back to skimage
+        impl = (
+            "astra_cuda" if RECONSTRUCTOR == "FBP_CUDA" else "skimage"
+        )
+        img_original, img_reconstructed = (
+            get_reconstructed_images_classic(
+                dataset, index=index, impl=impl
+            )
+        )
 
-                reconstructed = get_reconstructed_images_classic(
-                    sino_np, img_size=128, algorithm=RECONSTRUCTOR
-                )
-                reconstructed = reconstructed * 512
-                img_original = original[index][0]
-                img_reconstructed = reconstructed[index]
-                break
-    
     slider_window(img_original, img_reconstructed, a0=-1024, b0=3071)
 
 
