@@ -4,3 +4,5 @@ articles/
 latex/
 *.pyc
 __pycache__/
+*.pth
+*.txt

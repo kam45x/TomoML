@@ -87,35 +87,35 @@ class ConvNetX_128(nn.Module):
         # W: 183 -> 46 -> 12 -> 4
         self.encoder = nn.Sequential(
             nn.Conv2d(
-                in_ch, 64, kernel_size=(4, 4), stride=(4, 4), padding=(1, 1), padding_mode="zeros"
+                in_ch, 128, kernel_size=(4, 4), stride=(4, 4), padding=(1, 1), padding_mode="zeros"
             ),
-            nn.BatchNorm2d(64),
-            *blocks(64, n=1),
-            nn.BatchNorm2d(64),
-            nn.Conv2d(
-                64, 128, kernel_size=(4, 4), stride=(4, 4), padding=(1, 1), padding_mode="zeros"
-            ),
-            *blocks(128, n=3),
+            nn.BatchNorm2d(128),
+            *blocks(128, n=1),
             nn.BatchNorm2d(128),
             nn.Conv2d(
-                128, 256, kernel_size=(4, 3), stride=(4, 3), padding=(0, 0), padding_mode="zeros"
+                128, 256, kernel_size=(4, 4), stride=(4, 4), padding=(1, 1), padding_mode="zeros"
+            ),
+            *blocks(256, n=3),
+            nn.BatchNorm2d(256),
+            nn.Conv2d(
+                256, 512, kernel_size=(4, 3), stride=(4, 3), padding=(0, 0), padding_mode="zeros"
             ),
         )
 
         self.decoder = nn.Sequential(
-            *blocks(256, n=6),
-            nn.BatchNorm2d(256),
-            nn.ConvTranspose2d(256, 128, 2, 2, 0),  # 8
+            *blocks(512, n=6),
+            nn.BatchNorm2d(512),
+            nn.ConvTranspose2d(512, 256, 2, 2, 0),  # 8
+            *blocks(256, n=3),
+            nn.ConvTranspose2d(256, 128, 2, 2, 0),  # 16
             *blocks(128, n=3),
-            nn.ConvTranspose2d(128, 64, 2, 2, 0),  # 16
-            *blocks(64, n=3),
-            nn.ConvTranspose2d(64, 32, 2, 2, 0),  # 32
+            nn.ConvTranspose2d(128, 64, 2, 2, 0),  # 32
+            *blocks(64, n=1),
+            nn.ConvTranspose2d(64, 32, 2, 2, 0),  # 64
             *blocks(32, n=1),
-            nn.ConvTranspose2d(32, 16, 2, 2, 0),  # 64
-            *blocks(16, n=1),
-            nn.ConvTranspose2d(16, 16, 2, 2, 0),  # 128
-            *blocks(16, n=1),
-            nn.Conv2d(16, 1, 3, 1, 1),
+            nn.ConvTranspose2d(32, 32, 2, 2, 0),  # 128
+            *blocks(32, n=1),
+            nn.Conv2d(32, 1, 3, 1, 1),
         )
 
     def forward(self, x):
