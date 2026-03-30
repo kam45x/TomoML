@@ -13,6 +13,7 @@ TomoML is an engineering thesis project on CT image reconstruction using deep le
 ```bash
 # Plot training metrics from a log file
 python src/train_plotter.py <log_file>         # default: training_log.txt
+python src/metrics_plotter.py <log_file>       # alternative metrics visualizer
 
 # Interactive DICOM dataset selection/categorization
 python src/data_selection.py <ct_root_dir>
@@ -45,15 +46,19 @@ Training is done via Jupyter notebooks in `src/`. Launch Jupyter and open the re
 
 ### Model versions (src/models/)
 
-All models follow the Pix2Pix pattern: a **Generator** (UNet-style encoder-decoder) paired with a **Conditional Discriminator**.
+**Pix2Pix models** — a **Generator** (UNet-style encoder-decoder) paired with a **Conditional Discriminator**:
 
 - `Pix2Pix_128.py` — 128×128 generator with residual blocks (`ResidualConvBlock`) and `ConvTranspose2d` upsampling; discriminator uses `InstanceNorm2d` + `LeakyReLU`.
 - `Pix2Pix_128_V2.py` — Same architecture but decoder uses `Upsample + Conv2d` instead of `ConvTranspose2d` (avoids checkerboard artifacts).
 - `Pix2Pix_256_V1.py` — 256×256 variant with plain `conv_block` (no residuals), lighter encoder (32→64→128→256 channels).
 
-All generators end with `AdaptiveAvgPool2d` to force a fixed output resolution.
+All Pix2Pix generators end with `AdaptiveAvgPool2d` to force a fixed output resolution.
 
 `ConditionalDiscriminator.forward(x, cond)` takes the generated/real image `x` and the sinogram `cond` as separate arguments — it concatenates them internally after resizing `cond` to match `x`.
+
+**ConvNetX models** — based on ["Limited-Angle Tomography Reconstruction via Deep End-To-End Learning on Synthetic Data"](https://arxiv.org/abs/2309.06948) (Germer et al.):
+
+- `conv_netx.py` — Contains `ConvNetX` (512×256) and `ConvNetX_128` (256×183) variants. Uses residual `Block` modules with Conv2d, BatchNorm, and GELU activation. No GAN discriminator — standalone encoder-decoder.
 
 ### Data pipeline
 
@@ -69,8 +74,9 @@ All generators end with `AdaptiveAvgPool2d` to force a fixed output resolution.
 | `data_generation.ipynb` | Generate sinogram/CT image pairs from DICOM files |
 | `generate_ellipses.ipynb` | Generate synthetic ellipse dataset for pretraining |
 | `load_dataset.ipynb` | Visualize and inspect the dataset |
-| `pix2pix_128.ipynb` | Train 128×128 Pix2Pix model |
-| `pix2pix_256_v1.ipynb` | Train 256×256 Pix2Pix model |
+| `train_pix2pix_128.ipynb` | Train 128×128 Pix2Pix model |
+| `train_pix2pix_256.ipynb` | Train 256×256 Pix2Pix model |
+| `train_conv_netx.ipynb` | Train ConvNetX model |
 | `test_model.ipynb` | Evaluate a trained model |
 | `load_natural_images.ipynb` | Load natural images for domain experiments |
 
