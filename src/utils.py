@@ -26,7 +26,9 @@ class SinogramNoise:
 
 
 def count_parameters(model):
-    return sum(p.numel() for p in model.parameters() if p.requires_grad)
+    return sum(
+        p.numel() for p in model.parameters() if p.requires_grad
+    )
 
 
 def calculate_mse(img1, img2):
@@ -102,10 +104,10 @@ def _gmsd_single(img1, img2, c=0.0026):
     g2_h = convolve(img2, prewitt_h)
     g2_v = convolve(img2, prewitt_v)
 
-    m1 = np.sqrt(g1_h ** 2 + g1_v ** 2)
-    m2 = np.sqrt(g2_h ** 2 + g2_v ** 2)
+    m1 = np.sqrt(g1_h**2 + g1_v**2)
+    m2 = np.sqrt(g2_h**2 + g2_v**2)
 
-    gms = (2 * m1 * m2 + c) / (m1 ** 2 + m2 ** 2 + c)
+    gms = (2 * m1 * m2 + c) / (m1**2 + m2**2 + c)
     return float(np.std(gms))
 
 
@@ -129,7 +131,8 @@ def calculate_gmsd(img1, img2):
 def calculate_lpips(img1, img2, lpips_net):
     """Batch-aware LPIPS (Learned Perceptual Image Patch Similarity).
     Lower is better (0 = perceptually identical).
-    Expects a pre-initialized lpips.LPIPS model passed as lpips_net."""
+    Expects a pre-initialized lpips.LPIPS model passed as lpips_net.
+    """
     if img1.ndim == 3:
         img1 = img1.unsqueeze(0)
         img2 = img2.unsqueeze(0)
