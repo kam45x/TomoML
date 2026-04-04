@@ -97,6 +97,76 @@ class UnetGenerator(nn.Module):
         return self.resize(out)
 
 
+class UnetGeneratorSmall(nn.Module):
+    """Smaller Unet-like Encoder-Decoder model with Residual Blocks (half channels)"""
+
+    def __init__(self):
+        super().__init__()
+
+        # ----- Residual Encoder -----
+        self.enc1 = ResidualConvBlock(1, 64)
+        self.pool1 = nn.MaxPool2d(2)
+
+        self.enc2 = ResidualConvBlock(64, 128)
+        self.pool2 = nn.MaxPool2d(2)
+
+        self.enc3 = ResidualConvBlock(128, 256)
+        self.pool3 = nn.MaxPool2d(2)
+
+        self.enc4 = ResidualConvBlock(256, 512)
+
+        # ----- Bottleneck -----
+        self.bottleneck = ResidualConvBlock(512, 512)
+
+        # ----- Decoder -----
+        self.up3 = nn.Sequential(
+            nn.Upsample(scale_factor=2, mode="bilinear", align_corners=False),
+            nn.Conv2d(512, 256, kernel_size=3, padding=1),
+        )
+        self.dec3 = ResidualConvBlock(256 + 256, 256)
+
+        self.up2 = nn.Sequential(
+            nn.Upsample(scale_factor=2, mode="bilinear", align_corners=False),
+            nn.Conv2d(256, 128, kernel_size=3, padding=1),
+        )
+        self.dec2 = ResidualConvBlock(128 + 128, 128)
+
+        self.up1 = nn.Sequential(
+            nn.Upsample(scale_factor=2, mode="bilinear", align_corners=False),
+            nn.Conv2d(128, 64, kernel_size=3, padding=1),
+        )
+        self.dec1 = ResidualConvBlock(64 + 64, 64)
+
+        self.final = nn.Conv2d(64, 1, kernel_size=1)
+        self.resize = nn.AdaptiveAvgPool2d((128, 128))
+
+    def forward(self, x):
+        # Encoder
+        e1 = self.enc1(x)
+        e2 = self.enc2(self.pool1(e1))
+        e3 = self.enc3(self.pool2(e2))
+        e4 = self.enc4(self.pool3(e3))
+
+        # Bottleneck
+        b = self.bottleneck(e4)
+
+        # Decoder
+        d3 = self.up3(b)
+        d3 = F.interpolate(d3, size=e3.shape[2:], mode="bilinear", align_corners=False)
+        d3 = self.dec3(torch.cat([d3, e3], dim=1))
+
+        d2 = self.up2(d3)
+        d2 = F.interpolate(d2, size=e2.shape[2:], mode="bilinear", align_corners=False)
+        d2 = self.dec2(torch.cat([d2, e2], dim=1))
+
+        d1 = self.up1(d2)
+        d1 = F.interpolate(d1, size=e1.shape[2:], mode="bilinear", align_corners=False)
+        d1 = self.dec1(torch.cat([d1, e1], dim=1))
+
+        out = self.final(d1)
+        return self.resize(out)
+
+
 class BasicBlock(nn.Module):
     """Basic block"""
 
