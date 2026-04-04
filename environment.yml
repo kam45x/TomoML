@@ -1,0 +1,28 @@
+name: tomoml
+channels:
+  - pytorch
+  - astra-toolbox
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.12
+  - numpy
+  - scipy
+  - matplotlib
+  - tqdm
+  - h5py
+  - pandas
+  - scikit-image
+  - scikit-learn
+  - pillow
+  - pytorch
+  - torchvision
+  - pydicom
+  - astra-toolbox
+  - jupyterlab
+  - pip
+  - pip:
+      - odl
+      - dival
+      - torchinfo
+      - lpips
