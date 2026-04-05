@@ -11,4 +11,4 @@ torchvision
 torchinfo
 lpips
 odl
-dival
+astra-toolbox
