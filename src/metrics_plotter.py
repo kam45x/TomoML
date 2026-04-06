@@ -6,7 +6,7 @@ DISPLAY_POINTS = 31
 LOG_FILES = [
     ("logs/training_log3003.txt", "Pix2Pix"),
     ("logs/training_log0104.txt", "ConvNeXt"),
-    ("logs/training_log0404.txt", "ResUNeta"),
+    ("logs/training_log0504.txt", "ResUNeta"),
 ]
 
 pattern = re.compile(
