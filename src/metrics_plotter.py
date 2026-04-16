@@ -4,9 +4,9 @@ import matplotlib.pyplot as plt
 DISPLAY_POINTS = 31
 
 LOG_FILES = [
-    ("logs/training_log3003.txt", "Pix2Pix"),
-    ("logs/training_log0104.txt", "ConvNeXt"),
-    ("logs/training_log0504.txt", "ResUNeta"),
+    ("logs/training_log0904.txt", "ResUNeta"),
+    ("logs/training_log2503.txt", "ConvNeXt"),
+    ("logs/training_log0704.txt", "Pix2Pix"),
 ]
 
 pattern = re.compile(
@@ -47,7 +47,6 @@ for log_file, name in LOG_FILES:
     logs[name] = data
 
 metrics = [
-    ("loss", "Loss"),
     ("mse", "MSE"),
     ("ssim", "SSIM"),
     ("psnr", "PSNR"),
@@ -58,24 +57,35 @@ for metric_key, metric_label in metrics:
     train_key = f"train_{metric_key}"
     val_key = f"val_{metric_key}"
 
-    fig, (ax_train, ax_val) = plt.subplots(1, 2, figsize=(14, 5))
-    fig.suptitle(metric_label)
+    fig, (ax_train, ax_val) = plt.subplots(1, 2, figsize=(14, 7))
 
     for name, data in logs.items():
         label = name
         epochs = list(data["epochs"])[:DISPLAY_POINTS]
-        ax_train.plot(epochs, data[train_key][:DISPLAY_POINTS], label=label)
-        ax_val.plot(epochs, data[val_key][:DISPLAY_POINTS], label=label)
+        ax_train.plot(
+            epochs,
+            data[train_key][:DISPLAY_POINTS],
+            label=label,
+            linewidth=2,
+        )
+        ax_val.plot(
+            epochs,
+            data[val_key][:DISPLAY_POINTS],
+            label=label,
+            linewidth=2,
+        )
 
-    ax_train.set_xlabel("Epoch")
+    ax_train.set_xlabel("Epoki")
     ax_train.set_ylabel(metric_label)
-    ax_train.set_title(f"Train {metric_label}")
+    ax_train.set_title(f"Treningowe {metric_label}")
+    ax_train.set_ylim(bottom=0)
     ax_train.legend()
     ax_train.grid()
 
-    ax_val.set_xlabel("Epoch")
+    ax_val.set_xlabel("Epoki")
     ax_val.set_ylabel(metric_label)
-    ax_val.set_title(f"Val {metric_label}")
+    ax_val.set_title(f"Walidacyjne {metric_label}")
+    ax_val.set_ylim(bottom=0)
     ax_val.legend()
     ax_val.grid()
 
