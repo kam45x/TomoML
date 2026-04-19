@@ -4,9 +4,7 @@ import matplotlib.pyplot as plt
 DISPLAY_POINTS = 31
 
 LOG_FILES = [
-    ("logs/training_log0904.txt", "ResUNeta"),
-    ("logs/training_log2503.txt", "ConvNeXt"),
-    ("logs/training_log0704.txt", "Pix2Pix"),
+    ("logs/training_log1804.txt", "ConvNeXt"),
 ]
 
 pattern = re.compile(
