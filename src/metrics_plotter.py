@@ -57,33 +57,30 @@ for metric_key, metric_label in metrics:
 
     fig, (ax_train, ax_val) = plt.subplots(1, 2, figsize=(14, 7))
 
+    all_values = []
     for name, data in logs.items():
         label = name
         epochs = list(data["epochs"])[:DISPLAY_POINTS]
-        ax_train.plot(
-            epochs,
-            data[train_key][:DISPLAY_POINTS],
-            label=label,
-            linewidth=2,
-        )
-        ax_val.plot(
-            epochs,
-            data[val_key][:DISPLAY_POINTS],
-            label=label,
-            linewidth=2,
-        )
+        train_vals = data[train_key][:DISPLAY_POINTS]
+        val_vals = data[val_key][:DISPLAY_POINTS]
+        all_values.extend(train_vals)
+        all_values.extend(val_vals)
+        ax_train.plot(epochs, train_vals, label=label, linewidth=2)
+        ax_val.plot(epochs, val_vals, label=label, linewidth=2)
+
+    y_max = max(all_values) * 1.05
 
     ax_train.set_xlabel("Epoki")
     ax_train.set_ylabel(metric_label)
     ax_train.set_title(f"Treningowe {metric_label}")
-    ax_train.set_ylim(bottom=0)
+    ax_train.set_ylim(0, y_max)
     ax_train.legend()
     ax_train.grid()
 
     ax_val.set_xlabel("Epoki")
     ax_val.set_ylabel(metric_label)
     ax_val.set_title(f"Walidacyjne {metric_label}")
-    ax_val.set_ylim(bottom=0)
+    ax_val.set_ylim(0, y_max)
     ax_val.legend()
     ax_val.grid()
 
