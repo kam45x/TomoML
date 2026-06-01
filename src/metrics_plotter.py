@@ -4,7 +4,9 @@ import matplotlib.pyplot as plt
 DISPLAY_POINTS = 31
 
 LOG_FILES = [
-    ("logs/training_log1804.txt", "ConvNeXt"),
+    ("logs/training_log0504.txt", "ResUNeta"),
+    ("logs/training_log0104.txt", "ConvNeXt"),
+    ("logs/training_log3003.txt", "Pix2Pix"),
 ]
 
 pattern = re.compile(
@@ -55,7 +57,7 @@ for metric_key, metric_label in metrics:
     train_key = f"train_{metric_key}"
     val_key = f"val_{metric_key}"
 
-    fig, (ax_train, ax_val) = plt.subplots(1, 2, figsize=(14, 7))
+    fig, (ax_train, ax_val) = plt.subplots(1, 2, figsize=(14, 8))
 
     all_values = []
     for name, data in logs.items():
